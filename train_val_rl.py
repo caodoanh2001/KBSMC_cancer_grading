@@ -64,12 +64,12 @@ class Trainer(Config):
 
         logit_class , _ = out_net
         prob = F.softmax(logit_class, dim=-1)
-        pred = torch.argmax(prob, dim=-1).detach().numpy()
+        pred = torch.argmax(prob, dim=-1).cpu().detach().numpy()
 
         out_net_baseline = net_baseline(imgs)
         logit_class_baseline , _ = out_net_baseline
         prob_baseline = F.softmax(logit_class_baseline, dim=-1)
-        pred_baseline = torch.argmax(prob_baseline, dim=-1).detach().numpy()
+        pred_baseline = torch.argmax(prob_baseline, dim=-1).cpu().detach().numpy()
 
         import pdb; pdb.set_trace()
 
