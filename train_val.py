@@ -21,9 +21,6 @@ from loss.dorn_loss import OrdinalLoss
 import dataset as dataset
 from config import Config
 from loss.ceo_loss import CEOLoss, FocalLoss, SoftLabelOrdinalLoss, FocalOrdinalLoss, count_pred, inverse_huber_loss
-from torch.optim.lr_scheduler import LambdaLR
-from torch.nn import SmoothL1Loss
-
 ####
 
 class Trainer(Config):

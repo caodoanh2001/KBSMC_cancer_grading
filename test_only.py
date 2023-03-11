@@ -128,7 +128,7 @@ class Tester(Config):
         else:
             net = net_def.jl_efficientnet(task_mode=self.task_type.lower(), pretrained=True)
 
-        PATH_model = './log_colon_tma_20230311_att_ce_mse/MULTI_ce_mse_cancer_Effi_seed5_BS64/_net_1950.pth'
+        PATH_model = './_net_1950.pth'
         net = torch.nn.DataParallel(net).to(device)
         checkpoint = torch.load(PATH_model)
         net.load_state_dict(checkpoint)
