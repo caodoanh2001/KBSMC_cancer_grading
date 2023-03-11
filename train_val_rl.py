@@ -201,7 +201,6 @@ class Trainer(Config):
 
         PATH_model = './_net_1950.pth'
         net_baseline = net
-        net_baseline = torch.nn.DataParallel(net_baseline).to(device)
         checkpoint = torch.load(PATH_model)
         net_baseline.load_state_dict(checkpoint)
 
