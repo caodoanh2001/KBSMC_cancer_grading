@@ -89,8 +89,8 @@ class Tester(Config):
     def run_once(self, data_root_dir, fold_idx=None):
         log_dir = self.log_dir
         check_manual_seed(self.seed)
-        _, _, test_pairs = getattr(dataset, ('prepare_%s_data_test_2' % self.dataset))(data_root_dir)
-        # _, _, test_pairs = getattr(dataset, ('prepare_%s_data_test_1' % self.dataset))(data_root_dir)
+        #_, _, test_pairs = getattr(dataset, ('prepare_%s_data_test_2' % self.dataset))(data_root_dir)
+        _, _, test_pairs = getattr(dataset, ('prepare_%s_data_test_1' % self.dataset))(data_root_dir)
         
         # --------------------------- Dataloader
 
@@ -181,8 +181,8 @@ if __name__ == '__main__':
                              'loss ex: MULTI_mtmr, REGRESS_rank_ordinal, REGRESS_rank_dorn'
                              'REGRESS_FocalOrdinalLoss, REGRESS_soft_ordinal')
     parser.add_argument('--dataset', type=str, default='colon_tma', help='colon_tma, prostate_uhu')
-    parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_45wsis_cancer_grading_512_test_2/')
-    # parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_tma_cancer_grading_512/')
+    # parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_45wsis_cancer_grading_512_test_2/')
+    parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_tma_cancer_grading_512/')
     parser.add_argument('--seed', type=int, default=5, help='number')
     parser.add_argument('--alpha', type=int, default=5, help='number')
     parser.add_argument('--log_path', type=str, default='./log_colon_tma_20230307/')
