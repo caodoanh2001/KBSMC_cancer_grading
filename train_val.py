@@ -74,9 +74,11 @@ class Trainer(Config):
         if "MULTI" in self.task_type:
             logit_class, logit_regress = out_net[0], out_net[1]
 
-        if "ce" in self.loss_type:   
+        if "ce" in self.loss_type:
+            criterion = FocalLoss()
             prob = F.softmax(logit_class, dim=-1)
-            loss_entropy = F.cross_entropy(logit_class, true, reduction='mean')
+            # loss_entropy = F.cross_entropy(logit_class, true, reduction='mean')
+            loss_entropy = criterion(logit_class, true, reduction='mean')
             pred = torch.argmax(prob, dim=-1)
             loss += loss_entropy
 
@@ -88,7 +90,6 @@ class Trainer(Config):
 
         if "mse" in self.loss_type:
             # criterion = torch.nn.MSELoss()
-            # criterion1 = torch.nn.SmoothL1Loss()
             criterion = inverse_huber_loss
             loss_regres = criterion(logit_regress, true.float())
             loss += loss_regres
