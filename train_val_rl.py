@@ -21,7 +21,7 @@ from loss.dorn_loss import OrdinalLoss
 import dataset as dataset
 from config import Config
 from loss.ceo_loss import CEOLoss, FocalLoss, SoftLabelOrdinalLoss, FocalOrdinalLoss, count_pred, inverse_huber_loss
-from sklearn.metrics import recall_score
+from sklearn.metrics import recall_score, precision_score, f1_score
 ####
 
 class Trainer(Config):
@@ -73,7 +73,12 @@ class Trainer(Config):
 
         recall = recall_score(true.cpu().detach().numpy(), pred.cpu().detach().numpy(), average='macro')
         recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
-        loss_ = -torch.mean(prob, -1) * (recall - recall_baseline)
+
+        precision = precision_score(true.cpu().detach().numpy(), pred.cpu().detach().numpy(), average='macro')
+        precision_baseline = precision_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
+
+
+        loss_ = -torch.mean(prob, -1) * ((recall + precision) - (recall_baseline + precision_baseline))
         loss_ = loss_.to(pred.device)
         loss += loss_.mean()
 
