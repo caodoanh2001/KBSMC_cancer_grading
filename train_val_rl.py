@@ -71,6 +71,8 @@ class Trainer(Config):
         prob_baseline = F.softmax(logit_class_baseline, dim=-1)
         pred_baseline = torch.argmax(prob_baseline, dim=-1).cpu().detach().numpy()
 
+        recall = recall_score(true.cpu().detach().numpy(), pred, average='macro')
+        recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline, average='macro')
         import pdb; pdb.set_trace()
 
         acc = torch.mean((pred == true).float())  # batch accuracy
@@ -196,12 +198,13 @@ class Trainer(Config):
 
         else:
             net = net_def.jl_efficientnet(task_mode=self.task_type.lower(), pretrained=True)
+            net_baseline = net_def.jl_efficientnet(task_mode=self.task_type.lower(), pretrained=True)
 
         net = torch.nn.DataParallel(net).to(device)
 
         PATH_model = './_net_1950.pth'
-        net_baseline = net
         checkpoint = torch.load(PATH_model)
+        net.load_state_dict(checkpoint)
         net_baseline.load_state_dict(checkpoint)
 
         for param in net_baseline.parameters():
