@@ -73,7 +73,8 @@ class Trainer(Config):
 
         recall = recall_score(true.cpu().detach().numpy(), pred, average='macro')
         recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline, average='macro')
-        import pdb; pdb.set_trace()
+        loss_ = -torch.mean(prob, -1) * (recall - recall_baseline)
+        loss += loss_
 
         acc = torch.mean((pred == true).float())  # batch accuracy
         # gradient update
