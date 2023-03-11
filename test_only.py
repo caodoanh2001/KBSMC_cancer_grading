@@ -182,7 +182,7 @@ if __name__ == '__main__':
                              'REGRESS_FocalOrdinalLoss, REGRESS_soft_ordinal')
     parser.add_argument('--dataset', type=str, default='colon_tma', help='colon_tma, prostate_uhu')
     # parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_45wsis_cancer_grading_512_test_2/')
-    parser.add_argument('--data_root_dir', type=str, default='../../datasets/KBSMC_colon_tma_cancer_grading_512/')
+    parser.add_argument('--data_root_dir', type=str, default='../KBSMC_colon_tma_cancer_grading_512/')
     parser.add_argument('--seed', type=int, default=5, help='number')
     parser.add_argument('--alpha', type=int, default=5, help='number')
     parser.add_argument('--log_path', type=str, default='./log_colon_tma_20230307/')
