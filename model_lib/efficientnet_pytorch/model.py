@@ -209,14 +209,14 @@ class EfficientNet(nn.Module):
             self.classifier_ = nn.Sequential(
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
-                nn.Linear(1024, self._global_params.num_classes),
+                nn.Linear(768, self._global_params.num_classes),
             )
 
         if self.task_mode in ['regress', 'multi']:
             self.regressioner_ = nn.Sequential(
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
-                nn.Linear(1024, 1),
+                nn.Linear(768, 1),
             )
 
         self._swish = MemoryEfficientSwish()
