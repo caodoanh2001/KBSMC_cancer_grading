@@ -201,6 +201,7 @@ class Trainer(Config):
             net_baseline = net_def.jl_efficientnet(task_mode=self.task_type.lower(), pretrained=True)
 
         net = torch.nn.DataParallel(net).to(device)
+        net_baseline = torch.nn.DataParallel(net_baseline).to(device)
 
         PATH_model = './_net_1950.pth'
         checkpoint = torch.load(PATH_model)
