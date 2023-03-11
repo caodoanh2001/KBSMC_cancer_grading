@@ -12,6 +12,7 @@ from tensorboardX import SummaryWriter
 from imgaug import augmenters as iaa
 from misc.train_ultils_all_iter import *
 import importlib
+import torchvision
 
 
 from loss.mtmr_loss import get_loss_mtmr
@@ -19,8 +20,9 @@ from loss.rank_ordinal_loss import cost_fn
 from loss.dorn_loss import OrdinalLoss
 import dataset as dataset
 from config import Config
-from loss.ceo_loss import CEOLoss, FocalLoss, SoftLabelOrdinalLoss, FocalOrdinalLoss, count_pred
-from model_lib.customized_models import NewEfficientJCOBackbone
+from loss.ceo_loss import CEOLoss, FocalLoss, SoftLabelOrdinalLoss, FocalOrdinalLoss, count_pred, inverse_huber_loss
+from torch.optim.lr_scheduler import LambdaLR
+from torch.nn import SmoothL1Loss
 
 ####
 
@@ -71,33 +73,15 @@ class Trainer(Config):
                 logit_regress, probas = out_net[0], out_net[1]
             else:
                 logit_regress = out_net
+
         if "MULTI" in self.task_type:
             logit_class, logit_regress = out_net[0], out_net[1]
 
-        if "ce" in self.loss_type:
-            
-            if logit_class.__class__ == tuple:
-                preds = []
-                probas = []
-                loss_entropy = 0.
-                
-                for prob in logit_class:
-                    softmax_prob = F.softmax(prob, dim=-1)
-                    loss_entropy += F.cross_entropy(softmax_prob, true, reduction='mean')
-                    pred_cls = torch.argmax(softmax_prob, dim=-1) # Get indication of highest-probability class
-                    proba_cls = torch.max(softmax_prob, dim=-1).values # Get highest probability
-                    preds.append(pred_cls.unsqueeze(-1))
-                    probas.append(proba_cls.unsqueeze(-1))
-
-                pred = pred_cls
-                loss_entropy = loss_entropy / len(logit_class)
-                loss += loss_entropy
-
-            else:
-                prob = F.softmax(logit_class, dim=-1)
-                loss_entropy = F.cross_entropy(logit_class, true, reduction='mean')
-                pred = torch.argmax(prob, dim=-1)
-                loss += loss_entropy
+        if "ce" in self.loss_type:   
+            prob = F.softmax(logit_class, dim=-1)
+            loss_entropy = F.cross_entropy(logit_class, true, reduction='mean')
+            pred = torch.argmax(prob, dim=-1)
+            loss += loss_entropy
 
         if 'FocalLoss' in self.loss_type:
             loss_focal = FocalLoss()(logit_class, true)
@@ -106,22 +90,14 @@ class Trainer(Config):
             loss += loss_focal
 
         if "mse" in self.loss_type:
-            if logit_regress.__class__ == tuple:
-                loss_regres = 0.
-                criterion = torch.nn.MSELoss()
-                for regress in logit_regress:
-                    loss_regres += criterion(regress, true.float())
-
-                loss_regres = loss_regres / len(logit_regress)
-                loss += loss_regres
-
-            else:
-                criterion = torch.nn.MSELoss()
-                loss_regres = criterion(logit_regress, true.float())
-                loss += loss_regres
-                if "REGRESS" in self.task_type:
-                    label = torch.tensor([0., 1., 2., 3.]).repeat(len(true), 1).permute(1, 0).cuda()
-                    pred = torch.argmin(torch.abs(logit_regress - label), 0)
+            # criterion = torch.nn.MSELoss()
+            # criterion1 = torch.nn.SmoothL1Loss()
+            criterion = inverse_huber_loss
+            loss_regres = criterion(logit_regress, true.float())
+            loss += loss_regres
+            if "REGRESS" in self.task_type:
+                label = torch.tensor([0., 1., 2., 3.]).repeat(len(true), 1).permute(1, 0).cuda()
+                pred = torch.argmin(torch.abs(logit_regress - label), 0)
 
         if "mae" in self.loss_type:
             criterion = torch.nn.L1Loss()
@@ -146,19 +122,9 @@ class Trainer(Config):
             pred = count_pred(logit_regress)
 
         if "ceo" in self.loss_type:
-            if len(logit_regress) > 1:
-                loss_ordinal = 0.
-                criterion = CEOLoss(num_classes=self.nr_classes)
-                for regress in logit_regress:
-                    loss_ordinal += criterion(regress, true)
-
-                loss_ordinal = loss_ordinal / len(logit_regress)
-                loss += loss_ordinal
-            
-            else:
-                criterion = CEOLoss(num_classes=self.nr_classes)
-                loss_ordinal = criterion(logit_regress, true)
-                loss += loss_ordinal
+            criterion = CEOLoss(num_classes=self.nr_classes)
+            loss_ordinal = criterion(logit_regress, true)
+            loss += loss_ordinal
 
         if "mtmr" in self.loss_type:
             loss = get_loss_mtmr(logit_class, logit_regress, true, true)
@@ -232,21 +198,7 @@ class Trainer(Config):
 
             if "MULTI" in self.task_type:
                 logit_class, logit_regress = out_net[0], out_net[1]
-
-                if logit_class.__class__ == tuple:
-                    preds = []
-                    probas = []
-                    for pred in logit_class:
-                        softmax_prob = nn.functional.softmax(pred, dim=-1)
-                        pred_cls = torch.argmax(softmax_prob, dim=-1) # Get indication of highest-probability class
-                        preds.append(pred_cls)
-                        probas.append(softmax_prob)
-
-                    prob = probas[-1]
-                    logit_regress = logit_regress[-1]
-                
-                else:
-                    prob = nn.functional.softmax(logit_class, dim=-1)
+                prob = nn.functional.softmax(logit_class, dim=-1)
                 
                 return dict(logit_c=prob.cpu().numpy(),
                             logit_r=logit_regress.cpu().numpy(),
@@ -314,14 +266,11 @@ class Trainer(Config):
 
         net = torch.nn.DataParallel(net).to(device)
 
-        # net = NewEfficientJCOBackbone(num_classes=4, compound_coef=0)
-        # net = torch.nn.DataParallel(net).to(device)
-
         # optimizers
-        optimizer = optim.Adam(net.parameters(), lr=self.init_lr)
+        optimizer = optim.AdamW(net.parameters(), lr=self.init_lr)
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=self.nr_epochs // 3, T_mult=1,
                                                                    eta_min=self.init_lr * 0.1, last_epoch=-1)
-        #
+        
         iters = self.nr_epochs * self.epoch_length
         trainer = Engine(lambda engine, batch: self.train_step(engine, net, batch, iters, scheduler, optimizer, device))
         valider = Engine(lambda engine, batch: self.infer_step(net, batch, device))
@@ -401,7 +350,6 @@ class Trainer(Config):
             # self.run_once(self.fold_idx)
             self.run_once(data_root_dir, self.fold_idx)
         return
-
 
 ####
 if __name__ == '__main__':

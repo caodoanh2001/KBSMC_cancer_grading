@@ -2,7 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+from torch import Tensor
 
+def inverse_huber_loss(target,output):
+    absdiff = torch.abs(output - target)
+    C = 0.2*torch.max(absdiff).item()
+    return torch.mean(torch.where(absdiff < C, absdiff,(absdiff*absdiff+C*C)/(2*C) ))
 
 class CEOLoss(nn.Module):
     """
@@ -27,7 +32,6 @@ class CEOLoss(nn.Module):
         logit = x.repeat(self.num_classes, 1).permute(1, 0)
         logit = torch.abs(logit - levels)
         return F.cross_entropy(-logit, y, reduction='mean')
-
 
 
 class FocalLoss(nn.Module):
@@ -132,9 +136,6 @@ class FocalOrdinalLoss(nn.Module):
         return torch.mean(f_loss)
 
 
-
-
-
 def count_pred(x):
     N = x.shape[0]
     x = x.cuda() > 0.5
@@ -144,40 +145,3 @@ def count_pred(x):
         pred_i = x[:, :i+1].prod(1)*x[:, :i+1].sum(1)
         pred = torch.cat([pred, pred_i.view(N, 1)], dim =1)
     return pred.max(1)[0]
-
-
-# #
-# import os
-# os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-# def test():
-#     # x = torch.Tensor([[0.7, 0.5, 0.6], [0.5, 0.8, 0.2], [0.8, 0.6, 0.1], [0.1, 0.5, 0.6]])
-#     # y = torch.Tensor([1., 2., 3., 0.])
-#     # x = x.to("cuda")
-#     # y = y.to("cuda")
-#     # FocalOrdinalLoss()(x, y)
-#     # count_pred(x)
-#
-#
-#     x = torch.Tensor([0.7, 2., 0.6, 1.])
-#     y = torch.Tensor([1, 2, 3, 0])
-#     x = x.to("cuda")
-#     y = y.to("cuda")
-#     CEOLoss(4)(x, y)
-#     count_pred(x)
-#
-# test()
-#
-# #
-# #
-# #
-
-
-
-
-
-
-
-
-
-
-

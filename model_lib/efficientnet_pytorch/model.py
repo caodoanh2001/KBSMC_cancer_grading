@@ -10,6 +10,9 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import torchsummary as summary
+from model_lib.efficientnet_pytorch.transformer import Transformer
+from pytorch_pretrained_vit import ViT
+from positional_encodings.torch_encodings import PositionalEncoding1D
 from model_lib.efficientnet_pytorch.utils import (
     round_filters,
     round_repeats,
@@ -22,6 +25,7 @@ from model_lib.efficientnet_pytorch.utils import (
     MemoryEfficientSwish,
     calculate_output_image_size
 )
+import timm
 
 class MBConvBlock(nn.Module):
     """Mobile Inverted Residual Bottleneck Block.
@@ -204,22 +208,36 @@ class EfficientNet(nn.Module):
         # building classifier
         if self.task_mode in ['class', 'multi']:
             self.classifier_ = nn.Sequential(
-                nn.Conv2d(out_channels, out_channels, kernel_size=2, padding=0),
-                nn.ReLU(),
-                nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps),
-                nn.AdaptiveAvgPool2d((2, 2)),
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
-                nn.Linear(out_channels * 2 * 2, self._global_params.num_classes),
+                nn.Linear(1024, self._global_params.num_classes),
             )
+
         if self.task_mode in ['regress', 'multi']:
             self.regressioner_ = nn.Sequential(
-                nn.AdaptiveAvgPool2d((2, 2)),
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
-                nn.Linear(out_channels * 2 * 2, 1),
+                nn.Linear(1024, 1),
             )
+
         self._swish = MemoryEfficientSwish()
+        self.avg_pooling = nn.AdaptiveAvgPool2d((7, 7))
+        self.avg_pooling1 = nn.AdaptiveAvgPool2d(1)
+        
+        model = ViT('B_32_imagenet1k', pretrained=True)
+        # model = ViT('L_32_imagenet1k', pretrained=True)
+        for param in model.patch_embedding.parameters():
+            param.requires_grad = False
+
+        for idx_block in range(11):
+            model.transformer.blocks[idx_block].requires_grad = False
+            for param in model.transformer.blocks[idx_block].parameters():
+                param.requires_grad = False
+
+        self.patch_embedding = model.patch_embedding
+        self.linear_to_transformer = nn.Linear(1280, 768)
+        self.positional_embedding = PositionalEncoding1D(768)
+        self.transformer = model.transformer
 
         # weight initialization
         for m in self.modules():
@@ -231,8 +249,11 @@ class EfficientNet(nn.Module):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
             elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, 0, 0.01)
-                nn.init.zeros_(m.bias)
+                try:
+                    nn.init.normal_(m.weight, 0, 0.01)
+                    nn.init.zeros_(m.bias)
+                except:
+                    pass
 
     def set_swish(self, memory_efficient=True):
         """Sets swish function as memory efficient (for training) or standard (for export).
@@ -301,7 +322,6 @@ class EfficientNet(nn.Module):
         """
         # Stem
         x = self._swish(self._bn0(self._conv_stem(inputs)))
-
         # Blocks
         for idx, block in enumerate(self._blocks):
             drop_connect_rate = self._global_params.drop_connect_rate
@@ -325,11 +345,28 @@ class EfficientNet(nn.Module):
             Output of this model after processing.
         """
         # Convolution layers
-        x = self.extract_features(inputs)
 
-        # Pooling and final linear layer
-        # x_c = self._avg_pooling(x)
-        # x_c = x_c.flatten(start_dim=1)
+        # Apply transformer
+        x_t = self.patch_embedding(inputs)
+        x_t = self.avg_pooling(x_t).permute(0, 2, 3, 1)
+        bs, ps, ps, dim = x_t.shape
+        x_t = x_t.view(bs, ps * ps, dim)
+        x_t = x_t + self.positional_embedding(x_t)
+        x_t = self.transformer(x_t)
+        x_t = nn.ReLU()(x_t)
+        
+        # EfficientNet
+        x = self.extract_features(inputs)
+        x = self.avg_pooling(x) # bs x 1280 x 7 x 7
+        x = x.view(bs, 1280, ps * ps).permute(0, 2, 1)
+        x = self.linear_to_transformer(x)
+        x = nn.ReLU()(x)
+
+        # Fusion
+        x = x + x_t
+        x = x.permute(0, 2, 1).view(bs, 768, ps, ps)
+        x = self.avg_pooling1(x)
+        x = x.permute(0, 2, 3, 1).view(bs, 1, 768)
 
         if self.task_mode == 'class':
             c_out = self.classifier_(x)

@@ -96,42 +96,6 @@ class DatasetSerialWSI(data.Dataset):
     def __len__(self):
         return len(self.path_list)
 
-# def prepare_colon_tma_data():
-#     def load_data_info(pathname, parse_label=True, label_value=0):
-#         file_list = glob.glob(pathname)
-#         cancer_test = False
-#         if cancer_test:
-#             file_list_bn = glob.glob(pathname.replace('*.jpg', '*0.jpg'))
-#             file_list = [elem for elem in file_list if elem not in file_list_bn]
-#             label_list = [int(file_path.split('_')[-1].split('.')[0])-1 for file_path in file_list]
-#         else:
-#             if parse_label:
-#                 label_list = [int(file_path.split('_')[-1].split('.')[0]) for file_path in file_list]
-#             else:
-#                 label_list = [label_value for file_path in file_list]
-#         print(Counter(label_list))
-#         return list(zip(file_list, label_list))
-
-#     data_root_dir = '/media/data1/member1/projects/workspace_data/COLON_MANUAL_512/COLON_MANUAL_512'
-
-#     set_1010711 = load_data_info('%s/1010711/*.jpg' % data_root_dir)
-#     set_1010712 = load_data_info('%s/1010712/*.jpg' % data_root_dir)
-#     set_1010713 = load_data_info('%s/1010713/*.jpg' % data_root_dir)
-#     set_1010714 = load_data_info('%s/1010714/*.jpg' % data_root_dir)
-#     set_1010715 = load_data_info('%s/1010715/*.jpg' % data_root_dir)
-#     set_1010716 = load_data_info('%s/1010716/*.jpg' % data_root_dir)
-#     wsi_00016 = load_data_info('%s/wsi_00016/*.jpg' % data_root_dir, parse_label=True,
-#                                label_value=0)  # benign exclusively
-#     wsi_00017 = load_data_info('%s/wsi_00017/*.jpg' % data_root_dir, parse_label=True,
-#                                label_value=0)  # benign exclusively
-#     wsi_00018 = load_data_info('%s/wsi_00018/*.jpg' % data_root_dir, parse_label=True,
-#                                label_value=0)  # benign exclusively
-
-#     train_set = set_1010711 + set_1010712 + set_1010713 + set_1010715 + wsi_00016
-#     valid_set = set_1010716 + wsi_00018
-#     test_set = set_1010714 + wsi_00017
-#     return train_set, valid_set, test_set
-
 def prepare_colon_tma_data(
         data_root_dir=None):
     
@@ -162,6 +126,52 @@ def prepare_colon_tma_data(
 
     print(print_data_count(train_label))
     print(print_data_count(val_label))
+    print(print_data_count(test_label))
+    
+    return train_set, valid_set, test_set
+
+def prepare_colon_tma_data_test_1(
+        data_root_dir=None):
+    
+    def load_data_info(pathname):
+        file_list = glob.glob(pathname)
+        label_list = [int(file_path.split('_')[-1].split('.')[0]) for file_path in file_list]
+        print(Counter(label_list))
+        return list(zip(file_list, label_list))
+
+    set_tma04 = load_data_info('%s/tma_04/*.jpg' % data_root_dir)
+    set_wsi02 = load_data_info('%s/wsi_02/*.jpg' % data_root_dir)  # benign exclusively
+
+    train_set = None
+    valid_set = None
+    test_set = set_tma04 + set_wsi02
+    # print dataset detail
+    test_label = [test_set[i][1] for i in range(len(test_set))]
+    print(print_data_count(test_label))
+    
+    return train_set, valid_set, test_set
+
+def prepare_colon_tma_data_test_2(
+        data_root_dir=None):
+    
+    def load_data_info(pathname):
+        print(pathname)
+        file_list = glob.glob(pathname)
+        label_list = [int(file_path.split('_')[-1].split('.')[0]) for file_path in file_list]
+        print(Counter(label_list))
+        return list(zip(file_list, label_list))
+
+    test_set_2 = []
+    for folder in glob.glob('%s/*' % data_root_dir):
+        set_info = load_data_info('%s/**/*.png' % folder)
+        test_set_2.append(set_info)
+
+    train_set = None
+    valid_set = None
+    test_set = test_set_2[0]
+    for i in range(1, len(test_set_2)): test_set += test_set_2[i]
+    # print dataset detail
+    test_label = [test_set[i][1] for i in range(len(test_set))]
     print(print_data_count(test_label))
     
     return train_set, valid_set, test_set
