@@ -25,7 +25,6 @@ from model_lib.efficientnet_pytorch.utils import (
     MemoryEfficientSwish,
     calculate_output_image_size
 )
-import timm
 
 class MBConvBlock(nn.Module):
     """Mobile Inverted Residual Bottleneck Block.
