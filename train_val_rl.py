@@ -64,15 +64,15 @@ class Trainer(Config):
 
         logit_class , _ = out_net
         prob = F.softmax(logit_class, dim=-1)
-        pred = torch.argmax(prob, dim=-1).cpu().detach().numpy()
+        pred = torch.argmax(prob, dim=-1).cpu()
 
         out_net_baseline = net_baseline(imgs)
         logit_class_baseline , _ = out_net_baseline
         prob_baseline = F.softmax(logit_class_baseline, dim=-1)
-        pred_baseline = torch.argmax(prob_baseline, dim=-1).cpu().detach().numpy()
+        pred_baseline = torch.argmax(prob_baseline, dim=-1)
 
-        recall = recall_score(true.cpu().detach().numpy(), pred, average='macro')
-        recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline, average='macro')
+        recall = recall_score(true.cpu().detach().numpy(), pred.detach().numpy(), average='macro')
+        recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
         loss_ = -torch.mean(prob, -1) * (recall - recall_baseline)
         loss += loss_
 
