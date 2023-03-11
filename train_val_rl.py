@@ -68,7 +68,7 @@ class Trainer(Config):
 
         recalls = []
         for t, p in zip(true, pred):
-            reward = recall_score(t, p)
+            reward = recall_score(t.cpu().detach().numpy(), p.cpu().detach().numpy())
             recalls.append(reward)
 
         recalls = torch.tensor(recalls).to(pred.device)
