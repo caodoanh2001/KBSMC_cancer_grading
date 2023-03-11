@@ -70,7 +70,6 @@ class Trainer(Config):
         logit_class_baseline , _ = out_net_baseline
         prob_baseline = F.softmax(logit_class_baseline, dim=-1)
         pred_baseline = torch.argmax(prob_baseline, dim=-1).detach().numpy()
-        
 
         import pdb; pdb.set_trace()
 
@@ -201,6 +200,7 @@ class Trainer(Config):
         net = torch.nn.DataParallel(net).to(device)
 
         PATH_model = './_net_1950.pth'
+        net_baseline = net
         net_baseline = torch.nn.DataParallel(net_baseline).to(device)
         checkpoint = torch.load(PATH_model)
         net_baseline.load_state_dict(checkpoint)
