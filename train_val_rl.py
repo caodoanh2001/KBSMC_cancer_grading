@@ -71,14 +71,10 @@ class Trainer(Config):
         prob_baseline = F.softmax(logit_class_baseline, dim=-1)
         pred_baseline = torch.argmax(prob_baseline, dim=-1)
 
-        recall = recall_score(true.cpu().detach().numpy(), pred.cpu().detach().numpy(), average='macro')
-        recall_baseline = recall_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
+        recall = f1_score(true.cpu().detach().numpy(), pred.cpu().detach().numpy(), average='macro')
+        recall_baseline = f1_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
 
-        precision = precision_score(true.cpu().detach().numpy(), pred.cpu().detach().numpy(), average='macro')
-        precision_baseline = precision_score(true.cpu().detach().numpy(), pred_baseline.cpu().detach().numpy(), average='macro')
-
-
-        loss_ = -torch.mean(prob, -1) * ((recall + precision) - (recall_baseline + precision_baseline))
+        loss_ = -torch.mean(prob, -1) * (recall - recall_baseline)
         loss_ = loss_.to(pred.device)
         loss += loss_.mean()
 
