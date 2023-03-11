@@ -21,7 +21,7 @@ import dataset as dataset
 from config import Config
 from loss.ceo_loss import CEOLoss, FocalLoss, SoftLabelOrdinalLoss, FocalOrdinalLoss, count_pred
 from tqdm import tqdm
-from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix, cohen_kappa_score
 
 ####
 
@@ -161,6 +161,7 @@ class Tester(Config):
         print('Recall: ', recall_score(preds_c, trues, average='macro'))
         print('F1: ', f1_score(preds_c, trues, average='macro'))
         print('Accuracy: ', accuracy_score(preds_c, trues))
+        print('Kw:', cohen_kappa_score(preds_c, trues, weights='quadratic'))
         print('Confusion matrix: ')
         print(confusion_matrix(preds_c, trues))
 
