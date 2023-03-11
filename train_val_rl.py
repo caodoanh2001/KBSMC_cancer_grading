@@ -68,12 +68,11 @@ class Trainer(Config):
 
         recalls = []
         for t, p in zip(true, pred):
+            import pdb; pdb.set_trace()
             reward = recall_score(t.cpu().detach().numpy(), p.cpu().detach().numpy())
             recalls.append(reward)
 
         recalls = torch.tensor(recalls).to(pred.device)
-
-        import pdb; pdb.set_trace()
 
         acc = torch.mean((pred == true).float())  # batch accuracy
         # gradient update
