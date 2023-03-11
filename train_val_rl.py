@@ -47,7 +47,7 @@ class Trainer(Config):
         return
 
     ####
-    def train_step(self, engine, net, batch, iters, scheduler, optimizer, device):
+    def train_step(self, engine, net, net_baseline, batch, iters, scheduler, optimizer, device):
         net.train()  # train mode
 
         imgs_cpu, true_cpu = batch
@@ -64,15 +64,15 @@ class Trainer(Config):
 
         logit_class , _ = out_net
         prob = F.softmax(logit_class, dim=-1)
-        pred = torch.argmax(prob, dim=-1)
+        pred = torch.argmax(prob, dim=-1).detach().numpy()
 
-        recalls = []
-        for t, p in zip(true, pred):
-            import pdb; pdb.set_trace()
-            reward = recall_score(t.cpu().detach().numpy(), p.cpu().detach().numpy())
-            recalls.append(reward)
+        out_net_baseline = net_baseline(imgs)
+        logit_class_baseline , _ = out_net_baseline
+        prob_baseline = F.softmax(logit_class_baseline, dim=-1)
+        pred_baseline = torch.argmax(prob_baseline, dim=-1).detach().numpy()
+        
 
-        recalls = torch.tensor(recalls).to(pred.device)
+        import pdb; pdb.set_trace()
 
         acc = torch.mean((pred == true).float())  # batch accuracy
         # gradient update
@@ -200,13 +200,23 @@ class Trainer(Config):
 
         net = torch.nn.DataParallel(net).to(device)
 
+        PATH_model = './_net_1950.pth'
+        net_baseline = torch.nn.DataParallel(net_baseline).to(device)
+        checkpoint = torch.load(PATH_model)
+        net_baseline.load_state_dict(checkpoint)
+
+        for param in net_baseline.parameters():
+            param.requires_grad = False
+
+        net_baseline.eval()
+
         # optimizers
         optimizer = optim.AdamW(net.parameters(), lr=self.init_lr)
         scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=self.nr_epochs // 3, T_mult=1,
                                                                    eta_min=self.init_lr * 0.1, last_epoch=-1)
         
         iters = self.nr_epochs * self.epoch_length
-        trainer = Engine(lambda engine, batch: self.train_step(engine, net, batch, iters, scheduler, optimizer, device))
+        trainer = Engine(lambda engine, batch: self.train_step(engine, net, net_baseline, batch, iters, scheduler, optimizer, device))
         valider = Engine(lambda engine, batch: self.infer_step(net, batch, device))
         test = Engine(lambda engine, batch: self.infer_step(net, batch, device))
 
