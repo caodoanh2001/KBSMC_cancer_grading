@@ -257,13 +257,10 @@ class Conv2dStaticSamePadding(nn.Conv2d):
             self.static_padding = nn.ZeroPad2d((pad_w // 2, pad_w - pad_w // 2, pad_h // 2, pad_h - pad_h // 2))
         else:
             self.static_padding = Identity()
-        
-        self.dcn = DeformableConv2d(in_channels, out_channels, kernel_size, self.padding, stride)
 
     def forward(self, x):
         x = self.static_padding(x)
-        x = self.dcn(x)
-        # x = F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        x = F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
         return x
 
 
