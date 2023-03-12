@@ -77,7 +77,7 @@ class Trainer(Config):
 
         if "ce" in self.loss_type:
             prob = F.softmax(logit_class, dim=-1)
-            criterion = SeesawLoss(reduction='mean', num_classe=4)
+            criterion = SeesawLoss(reduction='mean', num_classes=4)
             # loss_entropy = F.cross_entropy(logit_class, true, reduction='mean')
             loss_entropy = criterion(logit_class, true)
             pred = torch.argmax(prob, dim=-1)
