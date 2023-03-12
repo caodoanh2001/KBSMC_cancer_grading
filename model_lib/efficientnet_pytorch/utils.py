@@ -270,7 +270,6 @@ class Conv2dStaticSamePadding(nn.Conv2d):
     def forward(self, x):
         x = self.static_padding(x)
         offset = self.offset_conv(x)
-        import pdb; pdb.set_trace()
         x = self.dcn(x, offset)
         # x = F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
         return x
