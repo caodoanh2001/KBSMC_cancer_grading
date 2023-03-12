@@ -14,7 +14,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.utils import model_zoo
-from dcn import DeformableConv2d
+from model_lib.efficientnet_pytorch.dcn import DeformableConv2d
 
 
 ################################################################################
