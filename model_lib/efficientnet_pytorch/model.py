@@ -229,7 +229,7 @@ class EfficientNet(nn.Module):
             )
 
         self._swish = MemoryEfficientSwish()
-        self.avg_pooling = nn.AdaptiveAvgPool2d((16, 16))
+        self.avg_pooling = nn.AdaptiveAvgPool2d((7, 7))
         self.avg_pooling1 = nn.AdaptiveAvgPool2d(1)
         
         model = ViT('B_32_imagenet1k', pretrained=True)
