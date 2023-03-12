@@ -259,7 +259,7 @@ class Conv2dStaticSamePadding(nn.Conv2d):
             self.static_padding = Identity()
 
         self.offset_conv = nn.Conv2d(in_channels, 
-                                     2 * kernel_size[0] * kernel_size[1],
+                                     2 * kernel_size * kernel_size,
                                      kernel_size=kernel_size, 
                                      stride=stride,
                                      padding=self.padding, 
