@@ -189,7 +189,8 @@ class SeesawLoss(nn.Module):
         unique_labels = labels.unique()
         for u_l in unique_labels:
             inds_ = labels == u_l.item()
-            self.cum_samples[u_l] += inds_.sum()
+            import pdb; pdb.set_trace()
+            self.cum_samples[u_l] = self.cum_samples[u_l] + inds_.sum()
 
         if weight is not None:
             weight = weight.float()
