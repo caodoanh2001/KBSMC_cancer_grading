@@ -12,7 +12,7 @@ class Config(object):
         self.init_lr = 1.0e-3
         self.lr_steps = 20  # decrease at every n-th epoch
         self.gamma = 0.2
-        self.train_batch_size = 32
+        self.train_batch_size = 16
         self.infer_batch_size = 32
         self.nr_classes = 4
         self.nr_epochs = 60
