@@ -14,6 +14,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.utils import model_zoo
+from dcn import DeformableConv2d
 
 
 ################################################################################
@@ -214,18 +215,6 @@ class Conv2dDynamicSamePadding(nn.Conv2d):
        The padding is operated in forward function by calculating dynamically.
     """
 
-    # Tips for 'SAME' mode padding.
-    #     Given the following:
-    #         i: width or height
-    #         s: stride
-    #         k: kernel size
-    #         d: dilation
-    #         p: padding
-    #     Output after Conv2d:
-    #         o = floor((i+p-((k-1)*d+1))/s+1)
-    # If o equals i, i = floor((i+p-((k-1)*d+1))/s+1),
-    # => p = (i-1)*s+((k-1)*d+1)-i
-
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1, groups=1, bias=True):
         super().__init__(in_channels, out_channels, kernel_size, stride, 0, dilation, groups, bias)
         self.stride = self.stride if len(self.stride) == 2 else [self.stride[0]] * 2
@@ -266,9 +255,13 @@ class Conv2dStaticSamePadding(nn.Conv2d):
         else:
             self.static_padding = Identity()
 
+        self.dcn = DeformableConv2d(in_channels, out_channels, kernel_size, stride, self.padding)
+
     def forward(self, x):
         x = self.static_padding(x)
-        x = F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        import pdb; pdb.set_trace()
+        x = self.dcn(x)
+        # x = F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
         return x
 
 
