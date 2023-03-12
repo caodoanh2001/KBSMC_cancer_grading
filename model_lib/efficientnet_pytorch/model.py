@@ -25,7 +25,6 @@ from model_lib.efficientnet_pytorch.utils import (
     MemoryEfficientSwish,
     calculate_output_image_size
 )
-from model_lib.efficientnet_pytorch.dcn import DeformableConv2d
 
 class MBConvBlock(nn.Module):
     """Mobile Inverted Residual Bottleneck Block.
@@ -208,10 +207,6 @@ class EfficientNet(nn.Module):
         # building classifier
         if self.task_mode in ['class', 'multi']:
             self.classifier_ = nn.Sequential(
-                DeformableConv2d(768, 768),
-                nn.BatchNorm2d(768),
-                nn.ReLU(),
-                nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
                 nn.Linear(768, self._global_params.num_classes),
@@ -219,10 +214,6 @@ class EfficientNet(nn.Module):
 
         if self.task_mode in ['regress', 'multi']:
             self.regressioner_ = nn.Sequential(
-                DeformableConv2d(768, 768),
-                nn.BatchNorm2d(768),
-                nn.ReLU(),
-                nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(start_dim=1),
                 nn.Dropout(self._global_params.dropout_rate),
                 nn.Linear(768, 1),
@@ -373,8 +364,8 @@ class EfficientNet(nn.Module):
         # Fusion
         x = x + x_t
         x = x.permute(0, 2, 1).view(bs, 768, ps, ps)
-        # x = self.avg_pooling1(x)
-        # x = x.permute(0, 2, 3, 1).view(bs, 1, 768)
+        x = self.avg_pooling1(x)
+        x = x.permute(0, 2, 3, 1).view(bs, 1, 768)
 
         if self.task_mode == 'class':
             c_out = self.classifier_(x)
